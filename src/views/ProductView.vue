@@ -93,9 +93,6 @@
                 variant="outlined"
                 class="mb-4"
               />
-
-              {{ editedItem.description }}
-
               <AppRichTextEditor v-model="editedItem.description" />
             </div>
 
@@ -104,7 +101,7 @@
               <div
                 v-for="(spec, index) in editedItem.specifications"
                 :key="index"
-                class="d-flex align-center mb-2"
+                class="d-flex flex-wrap align-center mb-2 ga-2"
               >
                 <v-text-field
                   v-model="spec.key"
@@ -121,11 +118,9 @@
                   density="compact"
                   hide-details
                 />
-                <v-btn icon="mdi-delete" variant="text" color="error" @click="removeSpec(index)" />
+                <v-btn icon="mdi-delete" size="x-small" color="error" @click="removeSpec(index)" />
               </div>
-              <v-btn prepend-icon="mdi-plus" size="small" variant="flat" @click="addSpec">
-                Add Specification
-              </v-btn>
+              <v-btn prepend-icon="mdi-plus" @click="addSpec"> Add Specification </v-btn>
             </div>
           </v-col>
           <v-col cols="12" md="4" class="border-s border-b">
@@ -202,24 +197,19 @@
                 chips
                 accept="image/*"
                 variant="outlined"
+                prepend-inner-icon="mdi-image"
+                prepend-icon=""
+                @update:modelValue="previewGalleryImages"
               />
 
               <p
                 class="text-caption mt-4 mb-2"
-                v-if="editedItem.gallery_images && editedItem.gallery_images.length > 0"
-              >
-                Existing Gallery Images
-              </p>
+                v-if="galleryImages && galleryImages.length > 0"
+              ></p>
               <v-row>
-                <v-col
-                  v-for="(imgUrl, index) in editedItem.gallery_images"
-                  :key="index"
-                  cols="6"
-                  sm="4"
-                  md="3"
-                >
+                <v-col v-for="(imgUrl, index) in galleryImages" :key="index" cols="6" sm="4" md="3">
                   <v-card class="position-relative">
-                    <v-img :src="imgUrl" height="120px" cover class="rounded" />
+                    <v-img :src="imgUrl" height="250px" cover class="rounded" />
                     <v-btn
                       icon="mdi-close"
                       size="x-small"
@@ -278,6 +268,8 @@ const mode = computed(() => {
 const id = computed(() => {
   return route.query.id || null
 })
+
+const galleryImages = ref([])
 
 const getDefaultItem = () => {
   return {
@@ -350,9 +342,8 @@ async function submitForm() {
     availability: editedItem.value.availability,
     mainImageFile: editedItem.value.mainImageFile,
     image: editedItem.value.image,
-    // image: editedItem.value.image,
-    // gallery_images: editedItem.value.gallery_images,
-    // newGalleryFiles: editedItem.value.newGalleryFiles,
+    newGalleryFiles: editedItem.value.newGalleryFiles,
+    gallery_images: editedItem.value.gallery_images,
   }
 
   if (id.value) {
@@ -398,6 +389,25 @@ function onCategoryChange(category) {
   }
   brandList.value = category.brands
 }
+
+function previewGalleryImages(files) {
+  if (files?.length > 0) {
+    files.forEach((file) => {
+      galleryImages.value.push(URL.createObjectURL(file))
+    })
+  } else {
+    galleryImages.value = []
+  }
+}
+
+function removeGalleryImage(index) {
+  if (id.value) {
+    store.removeSingleGalleryImage(id.value, editedItem.value.gallery_images, index)
+  }
+  galleryImages.value.splice(index, 1)
+  editedItem.value.newGalleryFiles.splice(index, 1)
+}
+
 onMounted(async () => {
   await Promise.all([brandStore.fetchAllItems(), categoryStore.fetchAllItems()])
   if (id.value) {
@@ -417,7 +427,8 @@ onMounted(async () => {
 
       editedItem.value.image = item?.image || null
       editedItem.value.imagePreview = item?.image || null
-      editedItem.value.mainImageFile = item?.image || null
+      editedItem.value.gallery_images = item?.gallery_images || []
+      galleryImages.value = item?.gallery_images || []
     }
   }
 })

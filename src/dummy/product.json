@@ -1,0 +1,80 @@
+[
+  {
+    "id": 101,
+    "created_at": "2023-10-27T10:00:00Z",
+    "name": "Return Filter Element",
+    "part_number": "0240 D 010 BN4HC",
+    "description": "<h2>High-Efficiency Hydraulic Filtration</h2><p>Genuine <strong>HYDAC</strong> return filter element designed for optimal performance and longevity in demanding hydraulic systems. Ensures maximum cleanliness and protects sensitive components from contamination.</p><ul><li>High dirt-holding capacity</li><li>Low pressure drop</li><li>Compatible with a wide range of hydraulic fluids</li></ul>",
+    "availability": "In Stock",
+    "brand_id": 1,
+    "category_id": 1,
+    "image": "https://placehold.co/600x400/cccccc/222222?text=HYDAC+Filter",
+    "gallery_images": [
+      "https://placehold.co/600x400/cccccc/222222?text=Filter+Side+View",
+      "https://placehold.co/600x400/cccccc/222222?text=Filter+Top+View"
+    ],
+    "specifications": [
+      { "key": "Micron Rating", "value": "10 µm" },
+      { "key": "Seal Material", "value": "NBR (Buna-N)" },
+      { "key": "Max Pressure Differential", "value": "20 bar" },
+      { "key": "Operating Temperature", "value": "-30°C to 100°C" }
+    ]
+  },
+  {
+    "id": 102,
+    "created_at": "2023-10-26T14:30:00Z",
+    "name": "Engine Air Filter",
+    "part_number": "26510362",
+    "description": "<h3>Perkins Genuine Air Filter</h3><p>Original Equipment Manufacturer (OEM) engine air filter for Perkins 1100 Series diesel engines. Designed to meet strict specifications to provide the best protection for your generator engine.</p>",
+    "availability": "In Stock",
+    "brand_id": 5,
+    "category_id": 2,
+    "image": "https://placehold.co/600x400/cccccc/222222?text=Perkins+Air+Filter",
+    "gallery_images": [],
+    "specifications": [
+      { "key": "Outer Diameter", "value": "128 mm" },
+      { "key": "Inner Diameter", "value": "78 mm" },
+      { "key": "Height", "value": "255 mm" },
+      { "key": "Engine Compatibility", "value": "Perkins 1104, 1106 Series" }
+    ]
+  },
+  {
+    "id": 103,
+    "created_at": "2023-10-25T09:15:00Z",
+    "name": "Hydraulic Main Pump Assembly",
+    "part_number": "172-5855",
+    "description": "<h2>Genuine CAT Hydraulic Pump</h2><p>A complete main hydraulic pump assembly for Caterpillar 320C and 320D excavators. Remanufactured to meet or exceed OEM specifications for pressure, flow, and durability. A critical component for restoring your heavy equipment's performance.</p>",
+    "availability": "On Order",
+    "brand_id": 7,
+    "category_id": 3,
+    "image": "https://placehold.co/600x400/cccccc/222222?text=CAT+Hydraulic+Pump",
+    "gallery_images": [
+      "https://placehold.co/600x400/cccccc/222222?text=Pump+Connectors",
+      "https://placehold.co/600x400/cccccc/222222?text=Pump+Serial+Plate"
+    ],
+    "specifications": [
+      { "key": "Pump Type", "value": "Axial Piston Pump" },
+      { "key": "Max Operating Pressure", "value": "350 bar (5075 PSI)" },
+      { "key": "Displacement", "value": "107 cm³/rev" },
+      { "key": "Machine Model", "value": "CAT 320C, 320D" }
+    ]
+  },
+  {
+    "id": 104,
+    "created_at": "2023-10-24T11:00:00Z",
+    "name": "SIMATIC S7-1200 CPU 1214C",
+    "part_number": "6ES7214-1AG40-0XB0",
+    "description": "<h3>Compact Automation Controller</h3><p>The Siemens SIMATIC S7-1200 controller is ideal for automation tasks in the low to medium performance range. It is the controller of choice for elevator control systems, conveyor belts, and other industrial machinery requiring compact and reliable logic control.</p>",
+    "availability": "Ask for Availability",
+    "brand_id": 6,
+    "category_id": 4,
+    "image": "https://placehold.co/600x400/cccccc/222222?text=Siemens+PLC",
+    "gallery_images": [],
+    "specifications": [
+      { "key": "Power Supply", "value": "24V DC" },
+      { "key": "Work Memory", "value": "125 KB" },
+      { "key": "Digital Inputs", "value": "14" },
+      { "key": "Digital Outputs", "value": "10" }
+    ]
+  }
+]

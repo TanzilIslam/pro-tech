@@ -37,7 +37,7 @@ export const useProductStore = defineStore('product', () => {
         : e.message
     appStore.showSnackbar({ text: message, color: 'error' })
   }
-  const payloadBuilder = (itemData, imageUrl) => {
+  const payloadBuilder = (itemData, imageUrl, galleryImageUrls) => {
     return {
       name: itemData.name,
       part_number: itemData.part_number,
@@ -47,6 +47,7 @@ export const useProductStore = defineStore('product', () => {
       brand_id: itemData.brand_id,
       availability: itemData.availability,
       image: imageUrl,
+      gallery_images: galleryImageUrls,
     }
   }
   async function fetchItems(newOptions) {
@@ -59,24 +60,34 @@ export const useProductStore = defineStore('product', () => {
       const from = (options.value.page - 1) * options.value.itemsPerPage
       const to = from + options.value.itemsPerPage - 1
 
-      let query = supabase.from(PRODUCT_TABLE).select('*', { count: 'exact' })
+      let query = supabase.from(PRODUCT_TABLE).select(
+        `*,
+        category: ${CATEGORY_TABLE} ( name ),
+        brand: ${BRAND_TABLE} ( name )`,
+        { count: 'exact' },
+      )
 
       if (options.value.search) {
         const searchStr = `%${options.value.search}%`
-        query = query.or(`name.ilike.${searchStr},description.ilike.${searchStr}`)
+        query = query.or(
+          `name.ilike.${searchStr},part_number.ilike.${searchStr},brand.name.ilike.${searchStr},category.name.ilike.${searchStr}`,
+        )
       }
 
       if (options.value.sortBy && options.value.sortBy.length > 0) {
         const sort = options.value.sortBy[0]
-        query = query.order(sort.key, { ascending: sort.order === 'asc' })
+        const sortableKeys = ['name', 'part_number', 'created_at']
+        if (sortableKeys.includes(sort.key)) {
+          query = query.order(sort.key, { ascending: sort.order === 'asc' })
+        }
       }
 
-      const { data, error } = await query.range(from, to)
+      const { data, error, count } = await query.range(from, to)
 
       if (error) throw error
 
       items.value = data
-      totalItems.value = error ? 0 : data.length > 0 ? (await query).count : 0
+      totalItems.value = count
     } catch (e) {
       handleError(e)
       items.value = []
@@ -104,14 +115,23 @@ export const useProductStore = defineStore('product', () => {
   async function createItem(itemData) {
     return performAction(
       async () => {
-        if (!itemData.mainImageFile) throw new Error('Product image is required.')
         let imageUrl = null
         imageUrl = await fileManager.uploadFile(itemData.mainImageFile, PRODUCT_STORAGE_BUCKET)
         if (!imageUrl) throw new Error(fileManager.error || 'Image upload failed.')
 
+        let galleryImageUrls = []
+        if (itemData.newGalleryFiles?.length > 0) {
+          galleryImageUrls = await fileManager.uploadMultipleFiles(
+            itemData.newGalleryFiles,
+            PRODUCT_STORAGE_BUCKET,
+          )
+          if (!galleryImageUrls)
+            throw new Error(fileManager.error || 'Gallery image upload failed.')
+        }
+
         return supabase
           .from(PRODUCT_TABLE)
-          .insert([payloadBuilder(itemData, imageUrl)])
+          .insert([payloadBuilder(itemData, imageUrl, galleryImageUrls)])
           .select()
           .single()
       },
@@ -122,19 +142,24 @@ export const useProductStore = defineStore('product', () => {
   async function updateItem(itemData) {
     return performAction(
       async () => {
-        let imageUrl = null
-        if (!itemData.image) {
-          if (!itemData.mainImageFile) throw new Error('Product image is required.')
-
+        let imageUrl = itemData.image
+        let galleryImageUrls = itemData.gallery_images
+        if (itemData.mainImageFile) {
           imageUrl = await fileManager.uploadFile(itemData.mainImageFile, PRODUCT_STORAGE_BUCKET)
           if (!imageUrl) throw new Error(fileManager.error || 'Image upload failed.')
-        } else {
-          imageUrl = itemData.image
+        }
+        if (itemData.newGalleryFiles?.length > 0) {
+          galleryImageUrls = await fileManager.uploadMultipleFiles(
+            itemData.newGalleryFiles,
+            PRODUCT_STORAGE_BUCKET,
+          )
+          if (!galleryImageUrls)
+            throw new Error(fileManager.error || 'Gallery image upload failed.')
         }
 
         return supabase
           .from(PRODUCT_TABLE)
-          .update(payloadBuilder(itemData, imageUrl))
+          .update(payloadBuilder(itemData, imageUrl, galleryImageUrls))
           .eq('id', itemData.id)
           .select()
           .single()
@@ -149,7 +174,12 @@ export const useProductStore = defineStore('product', () => {
       if (!itemToDelete) throw new Error('Item not found for deletion.')
       if (itemToDelete.image)
         await fileManager.deleteFile(itemToDelete.image, PRODUCT_STORAGE_BUCKET)
-      return supabase.from(BRAND_TABLE).delete().eq('id', itemData.id)
+      if (itemToDelete.gallery_images?.length > 0) {
+        itemToDelete.gallery_images.forEach((imageUrl) => {
+          fileManager.deleteFile(imageUrl, PRODUCT_STORAGE_BUCKET)
+        })
+      }
+      return supabase.from(PRODUCT_TABLE).delete().eq('id', itemData.id)
     }, 'Item deleted.')
   }
   async function removeItemImage(itemId, imageUrl) {
@@ -158,6 +188,19 @@ export const useProductStore = defineStore('product', () => {
       await fileManager.deleteFile(imageUrl, PRODUCT_STORAGE_BUCKET)
       return supabase.from(PRODUCT_TABLE).update({ image: null }).eq('id', itemId).select().single()
     }, 'Image removed successfully.')
+  }
+  async function removeSingleGalleryImage(itemId, allGalleryImages, index) {
+    if (!allGalleryImages[index]) throw new Error('No image URL provided to delete.')
+    await fileManager.deleteFile(allGalleryImages[index], PRODUCT_STORAGE_BUCKET)
+    await supabase
+      .from(PRODUCT_TABLE)
+      .update({
+        gallery_images: [...allGalleryImages.slice(0, index), ...allGalleryImages.slice(index + 1)],
+      })
+      .eq('id', itemId)
+      .select()
+      .single()
+    appStore.showSnackbar({ text: 'Image removed successfully.', color: 'success' })
   }
   async function fetchAllItems() {
     loading.value = true
@@ -177,7 +220,9 @@ export const useProductStore = defineStore('product', () => {
     try {
       const { data, error } = await supabase
         .from(PRODUCT_TABLE)
-        .select(`* , ${CATEGORY_TABLE} (id, name), ${BRAND_TABLE} (id, name)`)
+        .select(
+          `*, category: ${CATEGORY_TABLE} (*, brands: ${BRAND_TABLE}(*)), brand: ${BRAND_TABLE} (*)`,
+        )
         .eq('id', id)
         .single()
       if (error) throw error
@@ -213,5 +258,6 @@ export const useProductStore = defineStore('product', () => {
     removeItemImage,
     fetchAllItems,
     fetchItemById,
+    removeSingleGalleryImage,
   }
 })
