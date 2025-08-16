@@ -55,6 +55,14 @@ export const useAppStore = defineStore('app', () => {
     if (_resolveConfirm) _resolveConfirm(false)
   }
 
+  function handleError(error, action = 'handleError') {
+    console.error(`Error in ${action}:`, error)
+    showSnackbar({
+      text: 'An error occurred. Please try again later.',
+      color: 'error',
+    })
+  }
+
   return {
     snackbar,
     showSnackbar,
@@ -63,5 +71,6 @@ export const useAppStore = defineStore('app', () => {
     showConfirmDialog,
     confirm,
     cancel,
+    handleError,
   }
 })

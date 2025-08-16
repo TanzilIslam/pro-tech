@@ -37,19 +37,6 @@ export const useProductStore = defineStore('product', () => {
         : e.message
     appStore.showSnackbar({ text: message, color: 'error' })
   }
-  const payloadBuilder = (itemData, imageUrl, galleryImageUrls) => {
-    return {
-      name: itemData.name,
-      part_number: itemData.part_number,
-      description: itemData.description,
-      specifications: itemData.specifications,
-      category_id: itemData.category_id,
-      brand_id: itemData.brand_id,
-      availability: itemData.availability,
-      image: imageUrl,
-      gallery_images: galleryImageUrls,
-    }
-  }
   async function fetchItems(newOptions) {
     loading.value = true
     if (newOptions) {
@@ -112,61 +99,24 @@ export const useProductStore = defineStore('product', () => {
       loading.value = false
     }
   }
-  async function createItem(itemData) {
+  async function createItem(name) {
     return performAction(
       async () => {
-        let imageUrl = null
-        imageUrl = await fileManager.uploadFile(itemData.mainImageFile, PRODUCT_STORAGE_BUCKET)
-        if (!imageUrl) throw new Error(fileManager.error || 'Image upload failed.')
-
-        let galleryImageUrls = []
-        if (itemData.newGalleryFiles?.length > 0) {
-          galleryImageUrls = await fileManager.uploadMultipleFiles(
-            itemData.newGalleryFiles,
-            PRODUCT_STORAGE_BUCKET,
-          )
-          if (!galleryImageUrls)
-            throw new Error(fileManager.error || 'Gallery image upload failed.')
-        }
-
-        return supabase
-          .from(PRODUCT_TABLE)
-          .insert([payloadBuilder(itemData, imageUrl, galleryImageUrls)])
-          .select()
-          .single()
+        return supabase.from(PRODUCT_TABLE).insert([{ name }]).select()
       },
       'Item created successfully!',
       'product',
     )
   }
   async function updateItem(itemData) {
-    return performAction(
-      async () => {
-        let imageUrl = itemData.image
-        let galleryImageUrls = itemData.gallery_images
-        if (itemData.mainImageFile) {
-          imageUrl = await fileManager.uploadFile(itemData.mainImageFile, PRODUCT_STORAGE_BUCKET)
-          if (!imageUrl) throw new Error(fileManager.error || 'Image upload failed.')
-        }
-        if (itemData.newGalleryFiles?.length > 0) {
-          galleryImageUrls = await fileManager.uploadMultipleFiles(
-            itemData.newGalleryFiles,
-            PRODUCT_STORAGE_BUCKET,
-          )
-          if (!galleryImageUrls)
-            throw new Error(fileManager.error || 'Gallery image upload failed.')
-        }
-
-        return supabase
-          .from(PRODUCT_TABLE)
-          .update(payloadBuilder(itemData, imageUrl, galleryImageUrls))
-          .eq('id', itemData.id)
-          .select()
-          .single()
-      },
-      'Item updated successfully!',
-      'product',
-    )
+    return performAction(() => {
+      return supabase
+        .from(PRODUCT_TABLE)
+        .update({ ...itemData })
+        .eq('id', itemData.id)
+        .select()
+        .single()
+    }, 'Item updated successfully!')
   }
   async function deleteItem(itemData) {
     return performAction(async () => {

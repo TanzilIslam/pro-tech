@@ -29,7 +29,12 @@
               color="primary"
               prepend-icon="mdi-plus"
               variant="flat"
-              @click="router.push({ name: 'product', query: { mode: 'form' } })"
+              @click="
+                () => {
+                  showCreateDialog = true
+                  productName = ''
+                }
+              "
             >
               New {{ moduleName }}
             </v-btn>
@@ -75,6 +80,68 @@
           <v-col cols="12">
             <v-btn size="small" color="primary" icon="mdi-arrow-left" @click="cancelSaving"></v-btn>
           </v-col>
+          <v-col cols="12" md="3">
+            <div class="pa-4">
+              <p class="pa-0 mb-4 text-h6">Main Image</p>
+              <v-file-input
+                v-if="!editedItem.image"
+                label="Upload Main Image"
+                accept="image/*"
+                @update:modelValue="onMainImageSelect"
+                prepend-inner-icon="mdi-image"
+                prepend-icon=""
+                :rules="[rules.required]"
+              />
+              <div v-else>
+                <v-img
+                  :src="editedItem.image"
+                  cover
+                  width="100%"
+                  height="310px"
+                  class="mb-2 rounded border"
+                />
+                <v-btn size="small" color="error" variant="tonal" @click="handleRemoveImage">
+                  Remove Image
+                </v-btn>
+              </div>
+            </div>
+          </v-col>
+          <v-col cols="12" md="9">
+            <div class="pa-4">
+              <p class="pa-0 mb-4 text-h6">Image Gallery</p>
+              <v-file-input
+                label="Upload Additional Images"
+                multiple
+                chips
+                accept="image/*"
+                variant="outlined"
+                prepend-inner-icon="mdi-image"
+                prepend-icon=""
+                @update:modelValue="onGalleryImageSelect"
+              />
+              <v-row>
+                <v-col
+                  v-for="(imgUrl, index) in editedItem.gallery_images"
+                  :key="index"
+                  cols="6"
+                  sm="4"
+                  md="3"
+                >
+                  <v-card class="position-relative">
+                    <v-img :src="imgUrl" height="250px" cover class="rounded" />
+                    <v-btn
+                      icon="mdi-close"
+                      size="x-small"
+                      color="error"
+                      class="position-absolute"
+                      style="top: 4px; right: 4px"
+                      @click="removeGalleryImage(imgUrl)"
+                    />
+                  </v-card>
+                </v-col>
+              </v-row>
+            </div>
+          </v-col>
           <v-col cols="12" md="8">
             <div class="pa-4">
               <p class="pa-0 mb-4 text-h6">Core Information</p>
@@ -94,33 +161,6 @@
                 class="mb-4"
               />
               <AppRichTextEditor v-model="editedItem.description" />
-            </div>
-
-            <div class="pa-4 mt-4">
-              <p class="pa-0 mb-2 text-h6">Technical Specifications</p>
-              <div
-                v-for="(spec, index) in editedItem.specifications"
-                :key="index"
-                class="d-flex flex-wrap align-center mb-2 ga-2"
-              >
-                <v-text-field
-                  v-model="spec.key"
-                  label="Attribute"
-                  variant="outlined"
-                  density="compact"
-                  hide-details
-                  class="mr-2"
-                />
-                <v-text-field
-                  v-model="spec.value"
-                  label="Value"
-                  variant="outlined"
-                  density="compact"
-                  hide-details
-                />
-                <v-btn icon="mdi-delete" size="x-small" color="error" @click="removeSpec(index)" />
-              </div>
-              <v-btn prepend-icon="mdi-plus" @click="addSpec"> Add Specification </v-btn>
             </div>
           </v-col>
           <v-col cols="12" md="4" class="border-s border-b">
@@ -156,74 +196,43 @@
                 :items="['In Stock', 'On Order', 'Ask for Availability']"
                 variant="outlined"
               />
+              <div class="">
+                <p class="pa-0 mb-2 text-h6">Technical Specifications</p>
+                <div
+                  v-for="(spec, index) in editedItem.specifications"
+                  :key="index"
+                  class="d-flex flex-wrap align-center mb-2 ga-2"
+                >
+                  <v-text-field
+                    v-model="spec.key"
+                    label="Attribute"
+                    variant="outlined"
+                    density="compact"
+                    hide-details
+                    class="mr-2"
+                  />
+                  <v-text-field
+                    v-model="spec.value"
+                    label="Value"
+                    variant="outlined"
+                    density="compact"
+                    hide-details
+                  />
+                  <v-btn
+                    icon="mdi-delete"
+                    size="x-small"
+                    color="error"
+                    @click="removeSpecification(index)"
+                  />
+                </div>
+                <v-btn prepend-icon="mdi-plus" @click="addSpec"> Add Specification </v-btn>
+              </div>
             </div>
 
             <!-- Main Image Card -->
-            <div class="pa-4 mt-4">
-              <p class="pa-0 mb-4 text-h6">Main Image</p>
-              <v-file-input
-                v-if="!editedItem.imagePreview"
-                v-model="editedItem.mainImageFile"
-                label="Upload Main Image"
-                accept="image/*"
-                @update:modelValue="previewMainImage"
-                prepend-inner-icon="mdi-image"
-                prepend-icon=""
-                :rules="[rules.required]"
-              />
-              <div v-else>
-                <v-img
-                  :src="editedItem.imagePreview"
-                  cover
-                  width="100%"
-                  height="200px"
-                  class="mb-2 rounded border"
-                />
-                <v-btn size="small" color="error" variant="tonal" @click="handleRemoveImage">
-                  Remove Image
-                </v-btn>
-              </div>
-            </div>
           </v-col>
         </v-row>
-        <v-row>
-          <v-col cols="12">
-            <div class="pa-4">
-              <p class="pa-0 mb-4 text-h6">Image Gallery</p>
-              <v-file-input
-                v-model="editedItem.newGalleryFiles"
-                label="Upload Additional Images"
-                multiple
-                chips
-                accept="image/*"
-                variant="outlined"
-                prepend-inner-icon="mdi-image"
-                prepend-icon=""
-                @update:modelValue="previewGalleryImages"
-              />
-
-              <p
-                class="text-caption mt-4 mb-2"
-                v-if="galleryImages && galleryImages.length > 0"
-              ></p>
-              <v-row>
-                <v-col v-for="(imgUrl, index) in galleryImages" :key="index" cols="6" sm="4" md="3">
-                  <v-card class="position-relative">
-                    <v-img :src="imgUrl" height="250px" cover class="rounded" />
-                    <v-btn
-                      icon="mdi-close"
-                      size="x-small"
-                      color="error"
-                      class="position-absolute"
-                      style="top: 4px; right: 4px"
-                      @click="removeGalleryImage(index)"
-                    />
-                  </v-card>
-                </v-col>
-              </v-row>
-            </div>
-          </v-col>
-        </v-row>
+        <v-row> </v-row>
         <v-row>
           <v-col cols="12">
             <div class="pa-4 d-flex justify-end ga-4">
@@ -237,9 +246,25 @@
       </v-form>
     </template>
   </div>
+  <AppDialog ref="dialogRef" v-model="showCreateDialog">
+    <template #title> Create New {{ moduleName }} </template>
+    <v-text-field
+      v-model="productName"
+      :rules="[rules.required]"
+      label="Product Name*"
+      variant="outlined"
+      class="mb-4"
+    />
+    <!-- Actions Slot -->
+    <template #actions>
+      <v-btn color="error" @click="showCreateDialog = false">Cancel</v-btn>
+      <v-btn color="primary" @click="createItem" :loading="store.loading">Save</v-btn>
+    </template>
+  </AppDialog>
 </template>
 
 <script setup>
+import { useFileManagerStore } from '@/stores/fileManager'
 import { useCategoryStore } from '@/stores/category'
 import { useBrandStore } from '@/stores/brand'
 import { useAppStore } from '@/stores/app'
@@ -248,7 +273,8 @@ import { ref, computed, onMounted } from 'vue'
 import { formatDate } from '@/lib/helper'
 import { useRoute, useRouter } from 'vue-router'
 import AppRichTextEditor from '@/components/common/AppRichTextEditor.vue'
-import { BRAND_TABLE } from '@/lib/dbTable'
+import AppDialog from '@/components/common/AppDialog.vue'
+import { PRODUCT_STORAGE_BUCKET } from '@/lib/dbTable'
 
 const moduleName = 'Product'
 
@@ -258,18 +284,13 @@ const appStore = useAppStore()
 const brandStore = useBrandStore()
 const categoryStore = useCategoryStore()
 const store = useProductStore()
+const fileManager = useFileManagerStore()
 
+const dialogRef = ref(null)
+const showCreateDialog = ref(false)
 const formRef = ref(null)
 const brandList = ref([])
-
-const mode = computed(() => {
-  return route.query.mode || 'list'
-})
-const id = computed(() => {
-  return route.query.id || null
-})
-
-const galleryImages = ref([])
+const productName = ref('')
 
 const getDefaultItem = () => {
   return {
@@ -292,13 +313,19 @@ const getDefaultItem = () => {
   }
 }
 const editedItem = ref(getDefaultItem())
-
 const headers = ref([
   { title: 'Logo', key: 'image', sortable: false, width: '100px' },
   { title: 'Name', key: 'name' },
   { title: 'Created At', key: 'created_at', sortable: true },
   { title: 'Actions', key: 'actions', sortable: false, align: 'end' },
 ])
+
+const mode = computed(() => {
+  return route.query.mode || 'list'
+})
+const id = computed(() => {
+  return route.query.id || null
+})
 
 const rules = {
   required: (value) => !!value || 'This field is required.',
@@ -317,7 +344,7 @@ const cancelSaving = () => {
   router.push({ name: 'product' })
 }
 
-async function openDeleteDialog(item) {
+const openDeleteDialog = async (item) => {
   const confirmed = await appStore.showConfirmDialog({
     title: `Delete '${item.name}'?`,
     message: 'Are you sure you want to permanently delete this ' + moduleName + '?',
@@ -328,9 +355,9 @@ async function openDeleteDialog(item) {
   }
 }
 
-async function submitForm() {
+const submitForm = async () => {
   const { valid } = await formRef.value.validate()
-  if (!valid) return
+  if (!valid || !id.value) return
   const payload = {
     id: id.value,
     name: editedItem.value.name,
@@ -340,39 +367,32 @@ async function submitForm() {
     category_id: editedItem.value.category?.id,
     brand_id: editedItem.value.brand?.id,
     availability: editedItem.value.availability,
-    mainImageFile: editedItem.value.mainImageFile,
     image: editedItem.value.image,
-    newGalleryFiles: editedItem.value.newGalleryFiles,
     gallery_images: editedItem.value.gallery_images,
   }
-
-  if (id.value) {
-    await store.updateItem(payload)
-  } else {
-    await store.createItem(payload)
-  }
+  await store.updateItem(payload)
+  await fetchItemById()
+  router.push({ name: 'product' })
 }
-const previewMainImage = (file) => {
-  console.log(file)
-
+const onMainImageSelect = async (file) => {
   if (file) {
-    editedItem.value.imagePreview = URL.createObjectURL(file)
+    const url = await fileManager.uploadFile(file, PRODUCT_STORAGE_BUCKET)
+    if (url) {
+      await store.updateItem({
+        id: id.value,
+        image: url,
+      })
+      await fetchItemById()
+    }
   }
 }
 
-async function handleRemoveImage() {
-  if (!id.value) {
-    editedItem.value.imagePreview = null
-    editedItem.value.mainImageFile = null
-    return
-  } else {
-    await store.removeItemImage(id.value, editedItem.value.image)
-    editedItem.value.imagePreview = null
-    editedItem.value.mainImageFile = null
-  }
+const handleRemoveImage = async () => {
+  await store.removeItemImage(id.value, editedItem.value.image)
+  await fetchItemById()
 }
 
-function getPlural(word) {
+const getPlural = (word) => {
   if (word.endsWith('y')) {
     return word.slice(0, -1) + 'ies'
   } else if (word.endsWith('s')) {
@@ -381,7 +401,7 @@ function getPlural(word) {
     return word + 's'
   }
 }
-function onCategoryChange(category) {
+const onCategoryChange = (category) => {
   editedItem.value.brand_id = null
   if (!category) {
     brandList.value = []
@@ -390,46 +410,64 @@ function onCategoryChange(category) {
   brandList.value = category.brands
 }
 
-function previewGalleryImages(files) {
+const onGalleryImageSelect = async (files) => {
   if (files?.length > 0) {
-    files.forEach((file) => {
-      galleryImages.value.push(URL.createObjectURL(file))
+    await fileManager.uploadMultipleFiles(files, PRODUCT_STORAGE_BUCKET).then(async (urls) => {
+      await store.updateItem({
+        id: id.value,
+        gallery_images: [...editedItem.value.gallery_images, ...urls],
+      })
+      await fetchItemById()
     })
-  } else {
-    galleryImages.value = []
   }
 }
 
-function removeGalleryImage(index) {
-  if (id.value) {
-    store.removeSingleGalleryImage(id.value, editedItem.value.gallery_images, index)
+const removeGalleryImage = async (url) => {
+  await fileManager.deleteFile(url, PRODUCT_STORAGE_BUCKET)
+  const newGalleryImages = editedItem.value.gallery_images.filter((img) => img !== url)
+  await store.updateItem({
+    id: id.value,
+    gallery_images: newGalleryImages,
+  })
+  await fetchItemById()
+}
+
+const createItem = async () => {
+  const { valid } = await dialogRef.value.validateForm()
+  if (!valid) return
+  await store.createItem(productName.value)
+  showCreateDialog.value = false
+  productName.value = ''
+}
+const fetchItemById = async () => {
+  const item = await store.fetchItemById(id.value)
+  if (item) {
+    console.log(item)
+
+    editedItem.value.name = item?.name || ''
+    editedItem.value.part_number = item?.part_number || ''
+    editedItem.value.description = item?.description || ''
+    editedItem.value.specifications = item?.specifications || []
+
+    editedItem.value.category = categoryStore.allCategories.find(
+      (category) => category.id == item.category_id,
+    )
+    editedItem.value.brand = item.brand || null
+    brandList.value = editedItem.value.category?.brands || []
+    editedItem.value.availability = item?.availability || 'In Stock'
+
+    editedItem.value.image = item?.image || null
+    editedItem.value.gallery_images = item?.gallery_images || []
   }
-  galleryImages.value.splice(index, 1)
-  editedItem.value.newGalleryFiles.splice(index, 1)
+}
+const removeSpecification = (index) => {
+  editedItem.value.specifications.splice(index, 1)
 }
 
 onMounted(async () => {
   await Promise.all([brandStore.fetchAllItems(), categoryStore.fetchAllItems()])
   if (id.value) {
-    const item = await store.fetchItemById(id.value)
-    if (item) {
-      editedItem.value.name = item?.name || ''
-      editedItem.value.part_number = item?.part_number || ''
-      editedItem.value.description = item?.description || ''
-      editedItem.value.specifications = item?.specifications || []
-
-      editedItem.value.category = categoryStore.allCategories.find(
-        (category) => category.id == item.category_id,
-      )
-      editedItem.value.brand = item[BRAND_TABLE] || null
-      brandList.value = editedItem.value.category?.brands || []
-      editedItem.value.availability = item?.availability || 'In Stock'
-
-      editedItem.value.image = item?.image || null
-      editedItem.value.imagePreview = item?.image || null
-      editedItem.value.gallery_images = item?.gallery_images || []
-      galleryImages.value = item?.gallery_images || []
-    }
+    await fetchItemById()
   }
 })
 </script>

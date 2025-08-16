@@ -1,10 +1,13 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useRouter } from 'vue-router'
+import { useEnquiryStore } from '@/stores/enquiry'
+import AppNotificationMenu from '@/components/common/AppNotificationMenu.vue'
 
 const drawer = ref(true)
 const userStore = useUserStore()
+const enquiryStore = useEnquiryStore()
 const router = useRouter()
 
 const sideNavItems = computed(() => {
@@ -19,6 +22,15 @@ const handleLogout = async () => {
 const isMobile = computed(() => {
   return window.innerWidth < 768
 })
+
+onMounted(() => {
+  enquiryStore.subscribeToEnquiries()
+  enquiryStore.fetchUnreadEnquiries()
+})
+
+onUnmounted(() => {
+  enquiryStore.unsubscribeFromEnquiries()
+})
 </script>
 
 <template>
@@ -27,6 +39,7 @@ const isMobile = computed(() => {
       <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
       <v-toolbar-title>Pro Tech Engineering</v-toolbar-title>
       <v-spacer></v-spacer>
+      <AppNotificationMenu />
       <v-btn icon="mdi-logout" @click="handleLogout"></v-btn>
     </v-app-bar>
 

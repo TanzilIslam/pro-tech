@@ -29,13 +29,6 @@ export const useBrandStore = defineStore('brand', () => {
     { value: 50, title: '50' },
   ]
 
-  function handleError(e) {
-    const message =
-      e.code === '23503'
-        ? 'Cannot delete: This item is still assigned to one or more products.'
-        : e.message
-    appStore.showSnackbar({ text: message, color: 'error' })
-  }
   async function fetchItems(newOptions) {
     loading.value = true
     if (newOptions) {
@@ -65,7 +58,7 @@ export const useBrandStore = defineStore('brand', () => {
       items.value = data
       totalItems.value = error ? 0 : data.length > 0 ? (await query).count : 0
     } catch (e) {
-      handleError(e)
+      appStore.handleError(e)
       items.value = []
       totalItems.value = 0
     } finally {
@@ -80,7 +73,7 @@ export const useBrandStore = defineStore('brand', () => {
       appStore.showSnackbar({ text: successMessage, color: 'success' })
       return result
     } catch (e) {
-      handleError(e)
+      appStore.handleError(e)
       return null
     } finally {
       loading.value = false
@@ -138,7 +131,7 @@ export const useBrandStore = defineStore('brand', () => {
       if (error) throw error
       allItems.value = data
     } catch (e) {
-      handleError(e)
+      appStore.handleError(e)
       allItems.value = []
     } finally {
       loading.value = false
